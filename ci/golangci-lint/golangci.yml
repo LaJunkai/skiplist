@@ -1,0 +1,40 @@
+run:
+  skip-files:
+    - ".*_test\\.go$"
+  skip-dirs:
+    - "bin"
+    - "vendor"
+
+linters:
+  enable: # add optional linters: https://golangci-lint.run/usage/linters/
+    - bodyclose
+    - dupl
+    - goconst
+    - gocritic
+    - gocyclo
+    - goimports
+    - gofmt
+    - golint
+    - goprintffuncname
+    - gosec
+    - lll
+    - misspell
+    - nakedret
+
+linters-settings:
+  lll:
+    line-length: 140
+  gocritic:
+    disabled-checks:
+      - singleCaseSwitch
+  nakedret:
+    max-func-lines: 500
+  gocyclo:
+    min-complexity: 35
+  gosec:
+    excludes:
+      - G404
+
+issues:
+  exclude:
+    - "don't use an underscore in package name"  # golint
