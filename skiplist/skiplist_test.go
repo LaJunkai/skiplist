@@ -35,7 +35,7 @@ func TestSet(t *testing.T) {
 	if err := list.Set(ctx, "key-999", "key-99"); err != nil {
 		t.Error(err)
 	}
-	if err := list.Set(ctx, "key-99", "key-99", SetNX()); err != ErrDuplicatedKey {
+	if err := list.Set(ctx, "key-99", "key-99", OnNotExist()); err != ErrDuplicatedKey {
 		t.Error("expect ErrDuplicatedKey")
 	}
 }
