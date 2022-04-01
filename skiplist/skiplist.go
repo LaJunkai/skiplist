@@ -194,7 +194,7 @@ func (list *skipList[KT, VT]) CurrentMaxLevel() int {
 func New[KT constraints.Ordered, VT any](opts ...InitOption) SkipList[KT, VT] {
 	o := useInitOptions(opts)
 	if o.maxLevels <= 0 || o.maxLevels > maxSupportedLevel {
-		o.maxLevels = maxSupportedLevel
+		o.maxLevels = 48
 	}
 	return &skipList[KT, VT]{
 		head:     newEmptyEntry[KT, VT](o.maxLevels + 1),

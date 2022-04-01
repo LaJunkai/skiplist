@@ -1,4 +1,4 @@
-module skiplist
+module github.com/LaJunkai/collections
 
 go 1.18
 
