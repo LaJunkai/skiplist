@@ -4,6 +4,15 @@ Data structures included by this project are listed as following.
  - [x] Skiplist
  - [ ] SyncMap
 
+- [Collections](#collections)
+    * [🚀 Install](#---install)
+    * [💡 Usage](#---usage)
+        + [Skip List](#skip-list)
+            - [Basic Usage](#basic-usage)
+            - [Instantiation](#instantiation)
+            - [Set](#set)
+
+
 ## 🚀 Install
 `go get github.com/LaJunkai/collections`
 
