@@ -23,17 +23,17 @@ func (o *setOption) Apply(opts *setOptions) {
 	o.f(opts)
 }
 
-func SetNX() SetOption {
+func OnNotExist() SetOption {
 	return &setOption{f: func(opts *setOptions) {
 		opts.setNX = true
 	}}
 }
 
-func Expiration(exp time.Duration) SetOption {
-	return DueTime(time.Now().Add(exp))
+func WithExpiration(exp time.Duration) SetOption {
+	return WithDueTime(time.Now().Add(exp))
 }
 
-func DueTime(dt time.Time) SetOption {
+func WithDueTime(dt time.Time) SetOption {
 	return &setOption{f: func(opts *setOptions) {
 		opts.dueTime = dt
 	}}
