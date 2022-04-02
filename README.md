@@ -1,8 +1,19 @@
 # Collections
-Data structure implements based on Go 1.18+ Generics.  
+Data structures implements based on Go 1.18+ Generics.  
 Data structures included by this project are listed as following.
  - [x] Skiplist
+ - [ ] BloomFilter
  - [ ] SyncMap
+ - [ ] ConcurrentHashMap
+
+ - [Collections](#collections)
+     * [🚀 Install](#---install)
+     * [💡 Usage](#---usage)
+         + [Skip List](#skip-list)
+             - [Basic Usage](#basic-usage)
+             - [Instantiation](#instantiation)
+             - [Set Options](#set-options)
+
 
 ## 🚀 Install
 `go get github.com/LaJunkai/collections`
