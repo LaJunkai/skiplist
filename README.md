@@ -80,10 +80,7 @@ Use `skiplist.MaxLevels(n)` to custom the max level limit.
 err := list.Set(
 		ctx, "key-1", "value-1",
 		skiplist.OnNotExist(),
-		skiplist.WithExpiration(10 * time.Minute),
 	)
 ```
 1. Set method support `OnNotExist()` option. 
-With this option passed, an attempt to set an existed key may receive an ErrDuplicatedKey error.
-2. Set method support `WithExpiration(exp time.Duration)` and `WithDueTime(dueTime time.Time)`.
-The key set with one of these two option would be deleted lazily after its expiration time.
+With this option passed, an attempt to set an existed key may receive an `ErrDuplicatedKey` error.
