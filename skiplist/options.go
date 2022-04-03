@@ -29,16 +29,6 @@ func OnNotExist() SetOption {
 	}}
 }
 
-func WithExpiration(exp time.Duration) SetOption {
-	return WithDueTime(time.Now().Add(exp))
-}
-
-func WithDueTime(dt time.Time) SetOption {
-	return &setOption{f: func(opts *setOptions) {
-		opts.dueTime = dt
-	}}
-}
-
 func useSetOptions(opts []SetOption) *setOptions {
 	v := &setOptions{}
 	for _, o := range opts {
