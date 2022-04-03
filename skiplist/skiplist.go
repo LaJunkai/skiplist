@@ -1,7 +1,6 @@
 package skiplist
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -14,10 +13,10 @@ const (
 )
 
 type SkipList[KT constraints.Ordered, VT any] interface {
-	Get(ctx context.Context, key KT, opts ...GetOption) (value VT, err error)
-	Set(ctx context.Context, key KT, value VT, opts ...SetOption) (err error)
-	Range(ctx context.Context, f func(key KT, value VT) bool, opts ...RangeOption[KT]) (err error)
-	Delete(ctx context.Context, key KT, opts ...DeleteOption) (deleted bool, err error)
+	Get(key KT, opts ...GetOption) (value VT, err error)
+	Set(key KT, value VT, opts ...SetOption) (err error)
+	Range(f func(key KT, value VT) bool, opts ...RangeOption[KT]) (err error)
+	Delete(key KT, opts ...DeleteOption) (deleted bool, err error)
 	Size() uint64
 	CurrentMaxLevel() int
 	debugLevels()
@@ -32,28 +31,28 @@ type skipList[KT constraints.Ordered, VT any] struct {
 	currentMaxLevel int
 }
 
-func (list *skipList[KT, VT]) Set(ctx context.Context, key KT, value VT, opts ...SetOption) (err error) {
+func (list *skipList[KT, VT]) Set(key KT, value VT, opts ...SetOption) (err error) {
 	if list.initOpts.concurrent {
 		list.rwMutex.Lock()
 		defer list.rwMutex.Unlock()
 	}
-	return list.set(ctx, key, value, opts...)
+	return list.set(key, value, opts...)
 }
 
-func (list *skipList[KT, VT]) Get(ctx context.Context, key KT, opts ...GetOption) (value VT, err error) {
+func (list *skipList[KT, VT]) Get(key KT, opts ...GetOption) (value VT, err error) {
 	if list.initOpts.concurrent {
 		list.rwMutex.RLock()
 		defer list.rwMutex.RUnlock()
 	}
-	return list.get(ctx, key, opts...)
+	return list.get(key, opts...)
 }
 
-func (list *skipList[KT, VT]) Delete(ctx context.Context, key KT, opts ...DeleteOption) (deleted bool, err error) {
+func (list *skipList[KT, VT]) Delete(key KT, opts ...DeleteOption) (deleted bool, err error) {
 	if list.initOpts.concurrent {
 		list.rwMutex.Lock()
 		defer list.rwMutex.Unlock()
 	}
-	return list.delete(ctx, key, opts...)
+	return list.delete(key, opts...)
 }
 func (list *skipList[KT, VT]) debugLevels() {
 	current := list.head
@@ -63,8 +62,7 @@ func (list *skipList[KT, VT]) debugLevels() {
 	}
 }
 
-func (list *skipList[KT, VT]) Range(ctx context.Context,
-	f func(key KT, value VT) bool, opts ...RangeOption[KT]) (err error) {
+func (list *skipList[KT, VT]) Range(f func(key KT, value VT) bool, opts ...RangeOption[KT]) (err error) {
 	if list.initOpts.concurrent {
 		list.rwMutex.RLock()
 		defer list.rwMutex.RUnlock()
@@ -72,7 +70,7 @@ func (list *skipList[KT, VT]) Range(ctx context.Context,
 	current := list.head.levels[0]
 	o := useRangeOptions(opts)
 	if o.hasFrom {
-		prevList, _, err := list.find(ctx, o.from, list.initOpts.maxLevels, false)
+		prevList, _, err := list.find(o.from, list.initOpts.maxLevels, false)
 		if err != nil {
 			return err
 		}
@@ -95,7 +93,7 @@ func (list *skipList[KT, VT]) Range(ctx context.Context,
 				return nil
 			}
 		}
-		if !f(current.key, current.value) || ctx.Err() != nil {
+		if !f(current.key, current.value) {
 			break
 		}
 		current = current.levels[0]
@@ -103,8 +101,8 @@ func (list *skipList[KT, VT]) Range(ctx context.Context,
 	return nil
 }
 
-func (list *skipList[KT, VT]) get(ctx context.Context, key KT, opts ...GetOption) (value VT, err error) {
-	prevEntries, findAt, err := list.find(ctx, key, list.initOpts.maxLevels, true)
+func (list *skipList[KT, VT]) get(key KT, opts ...GetOption) (value VT, err error) {
+	prevEntries, findAt, err := list.find(key, list.initOpts.maxLevels, true)
 	if err != nil {
 		return
 	}
@@ -115,12 +113,12 @@ func (list *skipList[KT, VT]) get(ctx context.Context, key KT, opts ...GetOption
 	return target.value, err
 }
 
-func (list *skipList[KT, VT]) set(ctx context.Context, key KT, value VT, opts ...SetOption) (err error) {
+func (list *skipList[KT, VT]) set(key KT, value VT, opts ...SetOption) (err error) {
 	o := useSetOptions(opts)
 
 	rLevel := randomLevel(list.initOpts.maxLevels, list.countElement)
 	list.currentMaxLevel = max(list.currentMaxLevel, rLevel)
-	prevEntries, _, err := list.find(ctx, key, rLevel, false)
+	prevEntries, _, err := list.find(key, rLevel, false)
 	if err != nil {
 		return err
 	}
@@ -144,8 +142,8 @@ func (list *skipList[KT, VT]) set(ctx context.Context, key KT, value VT, opts ..
 	return nil
 }
 
-func (list *skipList[KT, VT]) delete(ctx context.Context, key KT, opts ...DeleteOption) (deleted bool, err error) {
-	prevEntries, _, err := list.find(ctx, key, list.initOpts.maxLevels, false)
+func (list *skipList[KT, VT]) delete(key KT, opts ...DeleteOption) (deleted bool, err error) {
+	prevEntries, _, err := list.find(key, list.initOpts.maxLevels, false)
 
 	if e := prevEntries[0].levels[0]; e != nil && e.key == key {
 		for level, next := range e.levels {
@@ -158,8 +156,7 @@ func (list *skipList[KT, VT]) delete(ctx context.Context, key KT, opts ...Delete
 
 }
 
-func (list *skipList[KT, VT]) find(ctx context.Context,
-	key KT, level int, returnOnFind bool) (prevEntries []*entry[KT, VT], findAt int, err error) {
+func (list *skipList[KT, VT]) find(key KT, level int, returnOnFind bool) (prevEntries []*entry[KT, VT], findAt int, err error) {
 	prevEntries = make([]*entry[KT, VT], level+1)
 	prev := list.head
 	for i := list.currentMaxLevel; i >= 0; i-- {
@@ -175,9 +172,6 @@ func (list *skipList[KT, VT]) find(ctx context.Context,
 				break
 			}
 			prev, current = current, current.levels[i]
-		}
-		if ctx.Err() != nil {
-			return prevEntries, 0, ctx.Err()
 		}
 	}
 	return prevEntries, 0, nil
