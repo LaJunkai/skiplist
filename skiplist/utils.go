@@ -1,6 +1,7 @@
 package skiplist
 
 import (
+	"golang.org/x/exp/constraints"
 	"math/rand"
 	"time"
 )
@@ -22,13 +23,25 @@ func randomLevel(maxLevel int, countElement uint64) int {
 	return maxLevel
 }
 
-func max[T int](values ...T) (maxValue T) {
+func max[T constraints.Ordered](values ...T) (maxValue T) {
 	if len(values) > 0 {
 		maxValue = values[0]
 	}
 	for _, v := range values {
 		if v > maxValue {
 			maxValue = v
+		}
+	}
+	return
+}
+
+func min[T constraints.Ordered](values ...T) (minValue T) {
+	if len(values) > 0 {
+		minValue = values[0]
+	}
+	for _, v := range values {
+		if v < minValue {
+			minValue = v
 		}
 	}
 	return

@@ -1,8 +1,6 @@
 package skiplist
 
 import (
-	"fmt"
-	"strings"
 	"sync"
 
 	"golang.org/x/exp/constraints"
@@ -17,13 +15,16 @@ type SkipList[KT constraints.Ordered, VT any] interface {
 	Set(key KT, value VT, opts ...SetOption) (err error)
 	Range(f func(key KT, value VT) bool, opts ...RangeOption[KT]) (err error)
 	Delete(key KT, opts ...DeleteOption) (deleted bool, err error)
+	Pop() (key KT, value VT, err error)
+	LPop() (key KT, value VT, err error)
+	Max() (key KT, value VT, err error)
+	Min() (key KT, value VT, err error)
 	Size() uint64
-	CurrentMaxLevel() int
-	debugLevels()
 }
 
 type skipList[KT constraints.Ordered, VT any] struct {
 	head            *entry[KT, VT]
+	tail            *entry[KT, VT]
 	rwMutex         sync.RWMutex
 	initOpts        *initOptions
 	countElement    uint64
@@ -31,6 +32,12 @@ type skipList[KT constraints.Ordered, VT any] struct {
 	currentMaxLevel int
 }
 
+// Set method is used to put kv pairs into the Skiplist it support `OnNotExist()` option.
+// With this option enabled, an attempt to commit set operation on an existed key may receive an `ErrDuplicatedKey` error.
+// err := list.Set(
+//   "key-1", "value-1",
+//   skiplist.OnNotExist(),
+// )
 func (list *skipList[KT, VT]) Set(key KT, value VT, opts ...SetOption) (err error) {
 	if list.initOpts.concurrent {
 		list.rwMutex.Lock()
@@ -53,13 +60,6 @@ func (list *skipList[KT, VT]) Delete(key KT, opts ...DeleteOption) (deleted bool
 		defer list.rwMutex.Unlock()
 	}
 	return list.delete(key, opts...)
-}
-func (list *skipList[KT, VT]) debugLevels() {
-	current := list.head
-	for current != nil {
-		fmt.Println(strings.Repeat("*", len(current.levels)))
-		current = current.levels[0]
-	}
 }
 
 func (list *skipList[KT, VT]) Range(f func(key KT, value VT) bool, opts ...RangeOption[KT]) (err error) {
@@ -101,6 +101,22 @@ func (list *skipList[KT, VT]) Range(f func(key KT, value VT) bool, opts ...Range
 	return nil
 }
 
+func (list *skipList[KT, VT]) Max() (key KT, value VT, err error) {
+	return list.max()
+}
+
+func (list *skipList[KT, VT]) Min() (key KT, value VT, err error) {
+	return list.min()
+}
+
+func (list *skipList[KT, VT]) Pop() (key KT, value VT, err error) {
+	return list.pop()
+}
+
+func (list *skipList[KT, VT]) LPop() (key KT, value VT, err error) {
+	return list.lPop()
+}
+
 func (list *skipList[KT, VT]) get(key KT, opts ...GetOption) (value VT, err error) {
 	prevEntries, findAt, err := list.find(key, list.initOpts.maxLevels, true)
 	if err != nil {
@@ -138,6 +154,12 @@ func (list *skipList[KT, VT]) set(key KT, value VT, opts ...SetOption) (err erro
 		next := prev.levels[i]
 		prev.levels[i], e.levels[i] = e, next
 	}
+	if next := e.levels[0]; next == nil {
+		list.tail = e
+	} else {
+		next.prev = e
+	}
+	e.prev = prevEntries[0]
 	list.countElement++
 	return nil
 }
@@ -149,11 +171,49 @@ func (list *skipList[KT, VT]) delete(key KT, opts ...DeleteOption) (deleted bool
 		for level, next := range e.levels {
 			prevEntries[level].levels[level] = next
 		}
+		if prev := prevEntries[0]; prev.levels[0] == nil {
+			list.tail = prevEntries[0]
+		} else {
+			prev.levels[0].prev = prev
+		}
 		list.countElement--
 		return true, nil
 	}
 	return false, err
+}
 
+func (list *skipList[KT, VT]) pop() (key KT, value VT, err error) {
+	key, value, err = list.max()
+	if err != nil {
+		return
+	}
+	_, err = list.delete(key)
+	return
+}
+
+func (list *skipList[KT, VT]) lPop() (key KT, value VT, err error) {
+	key, value, err = list.min()
+	if err != nil {
+		return
+	}
+	_, err = list.delete(key)
+	return
+}
+
+func (list *skipList[KT, VT]) max() (key KT, value VT, err error) {
+	if list.countElement == 0 {
+		err = ErrNoEntries
+		return
+	}
+	return list.tail.key, list.tail.value, nil
+}
+
+func (list *skipList[KT, VT]) min() (key KT, value VT, err error) {
+	if list.countElement == 0 {
+		err = ErrNoEntries
+		return
+	}
+	return list.head.levels[0].key, list.head.levels[0].value, nil
 }
 
 func (list *skipList[KT, VT]) find(key KT, level int, returnOnFind bool) (prevEntries []*entry[KT, VT], findAt int, err error) {
@@ -181,17 +241,15 @@ func (list *skipList[KT, VT]) Size() uint64 {
 	return list.countElement
 }
 
-func (list *skipList[KT, VT]) CurrentMaxLevel() int {
-	return list.currentMaxLevel
-}
-
 func New[KT constraints.Ordered, VT any](opts ...InitOption) SkipList[KT, VT] {
 	o := useInitOptions(opts)
 	if o.maxLevels <= 0 || o.maxLevels > maxSupportedLevel {
 		o.maxLevels = 48
 	}
+	head := newEmptyEntry[KT, VT](o.maxLevels + 1)
 	return &skipList[KT, VT]{
-		head:     newEmptyEntry[KT, VT](o.maxLevels + 1),
+		head:     head,
+		tail:     head,
 		initOpts: o,
 	}
 }

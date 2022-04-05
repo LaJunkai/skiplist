@@ -20,6 +20,7 @@ Data structures included by this project are listed as following.
 
 ## 💡 Usage
 ### Skip List
+The simplest `Skiplist` implement ever.
 #### Basic Usage
 ```go
 package main
@@ -36,26 +37,26 @@ func main() {
 	list := skiplist.New[string, string]()
 
 	// set
-	if err := list.Set(ctx, "user-0001.name", "John Wick"); err != nil {
+	if err := list.Set("user-0001.name", "John Wick"); err != nil {
 		panic(err)
 	}
 
 	// get
-	value, err := list.Get(ctx, "user-0001.name")
+	value, err := list.Get("user-0001.name")
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("got value: %v\n", value)
 
 	// delete
-	deleted, err := list.Delete(ctx, "user-0001.name")
+	deleted, err := list.Delete("user-0001.name")
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("successfully deleted: %v", deleted)
 
 	// range
-	err = list.Range(ctx, func(key, value string) bool {
+	err = list.Range(func(key, value string) bool {
 		fmt.Printf("key=%v; value=%v", key, value)
 		return true
 	})
@@ -78,9 +79,24 @@ Use `skiplist.MaxLevels(n)` to custom the max level limit.
 #### Set
 ```go
 err := list.Set(
-		ctx, "key-1", "value-1",
+		"key-1", "value-1",
 		skiplist.OnNotExist(),
 	)
 ```
 1. Set method support `OnNotExist()` option. 
 With this option passed, an attempt to set an existed key may receive an `ErrDuplicatedKey` error.
+
+#### Range
+```go
+list := New[string, string](Concurrent(true))
+_ = list.Range(
+  func(key, value string) bool {
+    fmt.Printf("key=%v, value=%v", key, value)
+    return true
+  },
+  From("key-001", true),
+  To("key-099", false),
+)
+```
+1. Range method support `From(startKey, includeBoundary)` and `To(stopKey, includeBoundary)` options 
+which enable developer to iterate the list with a specified range.
