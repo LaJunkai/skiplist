@@ -2,9 +2,7 @@
 Data structures implements based on Go 1.18+ Generics.  
 Data structures included by this project are listed as following.
  - [x] Skiplist
- - [ ] BloomFilter
- - [ ] SyncMap
- - [ ] ConcurrentHashMap
+ - [ ] HashSet
 
  - [Collections](#collections)
      * [🚀 Install](#---install)
