@@ -20,20 +20,18 @@ Data structures included by this project are listed as following.
 
 ## 💡 Usage
 ### Skip List
-The simplest `Skiplist` implement ever.
+The simplest `Skiplist` implement ever with 100% test coverage.
 #### Basic Usage
 ```go
 package main
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/LaJunkai/collections/skiplist"
 )
 
 func main() {
-	ctx := context.Background()
 	list := skiplist.New[string, string]()
 
 	// set
@@ -49,14 +47,11 @@ func main() {
 	fmt.Printf("got value: %v\n", value)
 
 	// delete
-	deleted, err := list.Delete("user-0001.name")
-	if err != nil {
-		panic(err)
-	}
+	deleted := list.Delete("user-0001.name")
 	fmt.Printf("successfully deleted: %v", deleted)
 
 	// range
-	err = list.Range(func(key, value string) bool {
+	list.Range(func(key, value string) bool {
 		fmt.Printf("key=%v; value=%v", key, value)
 		return true
 	})
@@ -89,7 +84,7 @@ With this option passed, an attempt to set an existed key may receive an `ErrDup
 #### Range
 ```go
 list := New[string, string](Concurrent(true))
-_ = list.Range(
+list.Range(
   func(key, value string) bool {
     fmt.Printf("key=%v, value=%v", key, value)
     return true

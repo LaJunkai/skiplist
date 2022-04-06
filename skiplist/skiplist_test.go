@@ -1,7 +1,6 @@
 package skiplist
 
 import (
-	"container/list"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -27,8 +26,15 @@ func init() {
 	}
 }
 
+func TestNew(t *testing.T) {
+	list := New[float64, string]()
+	if list == nil {
+		t.Error("expected the list instance, got nil")
+	}
+}
+
 func TestSkipList_Set(t *testing.T) {
-	list := New[string, int]()
+	list := New[string, int](MaxLevels(18))
 	for i := 0; i < scale; i++ {
 		if err := list.Set(keys[i], values[i]); err != nil {
 			t.Fatal(err)
@@ -52,6 +58,13 @@ func TestSkipList_Get(t *testing.T) {
 	}
 }
 
+func TestSkipList_Get2(t *testing.T) {
+	_, err := readonlyList.Get("{{{{")
+	if err != ErrKeyNotFound {
+		t.Fatal("expected ErrKeyNotFound")
+	}
+}
+
 func TestSkipList_Delete(t *testing.T) {
 	list := New[string, int]()
 	for i := 0; i < scale; i++ {
@@ -59,14 +72,15 @@ func TestSkipList_Delete(t *testing.T) {
 			t.Fatal(err)
 		}
 		if i%4 == 0 {
-			deleted, err := list.Delete(keys[i])
-			if err != nil {
-				t.Fatal(err)
-			}
+			deleted := list.Delete(keys[i])
 			if !deleted {
 				t.Fatalf("expect delete the key [%v]", keys[i])
 			}
 		}
+	}
+	deleted := list.Delete("{{{")
+	if deleted {
+		t.Error("expected deleted=false, bot deleted=true")
 	}
 }
 
@@ -80,16 +94,14 @@ func TestSkipList_Range(t *testing.T) {
 		_ = list.Set(item.key, item.value)
 	}
 	index := 0
-	err := list.Range(func(key string, value int) bool {
+	list.Range(func(key string, value int) bool {
 		if kv := kvs[index]; key != kv.key || value != kv.value {
 			t.Fatalf("range disordered, expected %v=%v, got %v=%v", kv.key, kv.value, key, value)
 		}
 		index += 1
 		return true
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+
 }
 
 func TestSkipList_Pop(t *testing.T) {
@@ -160,7 +172,18 @@ func TestSkipList_Min(t *testing.T) {
 	}
 }
 
-func TestMaxLevels(t *testing.T) {
-	list = list.List{}.New[string, string]()
-
+func TestSkipList_Size(t *testing.T) {
+	list := New[int, int]()
+	_ = list.Set(1, 2)
+	if list.Size() != 1 {
+		t.Error("expected size of 1")
+	}
+	_ = list.Set(1, 3)
+	if list.Size() != 1 {
+		t.Error("expected size of 1")
+	}
+	_ = list.Delete(1)
+	if list.Size() != 0 {
+		t.Error("expected size of 0")
+	}
 }
