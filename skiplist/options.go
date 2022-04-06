@@ -29,16 +29,6 @@ func OnNotExist() SetOption {
 	}}
 }
 
-func WithExpiration(exp time.Duration) SetOption {
-	return WithDueTime(time.Now().Add(exp))
-}
-
-func WithDueTime(dt time.Time) SetOption {
-	return &setOption{f: func(opts *setOptions) {
-		opts.dueTime = dt
-	}}
-}
-
 func useSetOptions(opts []SetOption) *setOptions {
 	v := &setOptions{}
 	for _, o := range opts {
@@ -49,10 +39,33 @@ func useSetOptions(opts []SetOption) *setOptions {
 
 // get options
 type getOptions struct {
+	getOrDefault bool
 }
 
 type GetOption interface {
 	Apply(opts *getOptions)
+}
+
+type getOption struct {
+	f func(opts *getOptions)
+}
+
+func (o *getOption) Apply(opts *getOptions) {
+	o.f(opts)
+}
+
+func GetOrDefault() GetOption {
+	return &getOption{f: func(opts *getOptions) {
+		opts.getOrDefault = true
+	}}
+}
+
+func useGetOptions(opts []GetOption) *getOptions {
+	v := &getOptions{}
+	for _, o := range opts {
+		o.Apply(v)
+	}
+	return v
 }
 
 // delete options
@@ -133,12 +146,6 @@ func Concurrent(c bool) InitOption {
 }
 
 func MaxLevels(l int) InitOption {
-	if l > 64 {
-		l = 64
-	}
-	if l < 1 {
-		l = 1
-	}
 	return &initOption{f: func(opts *initOptions) {
 		opts.maxLevels = l
 	}}

@@ -12,14 +12,6 @@ type readonlyEntry[KT constraints.Ordered, VT any] struct {
 	value VT
 }
 
-func (r *readonlyEntry[KT, VT]) Key() KT {
-	return r.key
-}
-
-func (r *readonlyEntry[KT, VT]) Value() VT {
-	return r.value
-}
-
 type entry[KT constraints.Ordered, VT any] struct {
 	readonlyEntry[KT, VT]
 	levels []*entry[KT, VT]
