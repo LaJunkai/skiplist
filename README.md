@@ -1,32 +1,20 @@
-# Collections
-Data structures implements based on Go 1.18+ Generics.  
-Data structures included by this project are listed as following.
- - [x] Skiplist
- - [ ] HashSet
-
- - [Collections](#collections)
-     * [🚀 Install](#---install)
-     * [💡 Usage](#---usage)
-         + [Skip List](#skip-list)
-             - [Basic Usage](#basic-usage)
-             - [Instantiation](#instantiation)
-             - [Set Options](#set-options)
+# Skiplist
+The simplest `Skiplist` implement ever with 100% test coverage (based on Go 1.18+ Generics). 
 
 
 ## 🚀 Install
-`go get github.com/LaJunkai/collections`
+`go get github.com/LaJunkai/skiplist`
 
 ## 💡 Usage
-### Skip List
-The simplest `Skiplist` implement ever with 100% test coverage.
-#### Basic Usage
+
+### Basic Usage
 ```go
 package main
 
 import (
 	"fmt"
 
-	"github.com/LaJunkai/collections/skiplist"
+	"github.com/LaJunkai/skiplist"
 )
 
 func main() {
@@ -56,7 +44,7 @@ func main() {
 }
 
 ```
-#### Instantiation
+### Instantiation
 ```go
 list := skiplist.New[string, string](
 		skiplist.Concurrent(false),
@@ -69,7 +57,7 @@ Use `skiplist.Concurrent(false)` to disable the concurrent control.
 2. skiplist support levels in range of `1 - 64` (default max level is 48).
 Use `skiplist.MaxLevels(n)` to custom the max level limit.
 
-#### Set
+### Set
 ```go
 err := list.Set(
 		"key-1", "value-1",
@@ -79,7 +67,7 @@ err := list.Set(
 1. Set method support `OnNotExist()` option. 
 With this option passed, an attempt to set an existed key may receive an `ErrDuplicatedKey` error.
 
-#### Range
+### Range
 ```go
 list := New[string, string](Concurrent(true))
 list.Range(
