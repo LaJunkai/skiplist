@@ -1,20 +1,43 @@
 package skiplist
 
 import (
-	"math/rand"
-	"time"
+	"crypto/rand"
+	"math/big"
+	"sync"
 
 	"golang.org/x/exp/constraints"
 )
 
-var random = rand.New(rand.NewSource(time.Now().UnixNano()))
-
-func init() {
-
-}
+var (
+	randomMutex sync.Mutex
+)
 
 func randomLevel(maxLevel int, countElement uint64) int {
-	v := random.Uint64() % ((countElement << 1) + 1)
+	randomMutex.Lock()
+	defer randomMutex.Unlock()
+	
+	// Prevent overflow: if countElement is too large, use a safe maximum
+	denominator := countElement << 1
+	if denominator < countElement || denominator == 0 { // Overflow occurred or zero
+		// Use a large but safe value for very large counts
+		denominator = 1000000
+	}
+	denominator += 1
+	
+	// Ensure denominator is positive for crypto/rand
+	if denominator > (1<<63 - 1) {
+		denominator = 1000000
+	}
+	
+	// Use crypto/rand for thread-safe random generation
+	bigDenominator := big.NewInt(int64(denominator))
+	bigV, err := rand.Int(rand.Reader, bigDenominator)
+	if err != nil {
+		// Fallback to a simple deterministic approach if crypto/rand fails
+		return (int(countElement % uint64(maxLevel))) + 1
+	}
+	
+	v := bigV.Uint64()
 	for i := 1; i <= maxLevel; i++ {
 		if v&1 == 0 {
 			return i

@@ -107,10 +107,18 @@ func (list *skipList[KT, VT]) Min() (key KT, value VT, err error) {
 }
 
 func (list *skipList[KT, VT]) Pop() (key KT, value VT, err error) {
+	if list.initOpts.concurrent {
+		list.rwMutex.Lock()
+		defer list.rwMutex.Unlock()
+	}
 	return list.pop()
 }
 
 func (list *skipList[KT, VT]) LPop() (key KT, value VT, err error) {
+	if list.initOpts.concurrent {
+		list.rwMutex.Lock()
+		defer list.rwMutex.Unlock()
+	}
 	return list.lPop()
 }
 
@@ -178,21 +186,53 @@ func (list *skipList[KT, VT]) delete(key KT, opts ...DeleteOption) (deleted bool
 }
 
 func (list *skipList[KT, VT]) pop() (key KT, value VT, err error) {
-	key, value, err = list.max()
-	if err != nil {
+	// Get the maximum element atomically
+	if list.countElement == 0 {
+		err = ErrNoEntries
 		return
 	}
-	_ = list.delete(key)
-	return
+	
+	// The tail always points to the maximum element
+	key = list.tail.key
+	value = list.tail.value
+	
+	// Delete the maximum element
+	deleted := list.delete(key)
+	if !deleted {
+		// This should not happen in a properly functioning skiplist
+		err = ErrKeyNotFound
+		return
+	}
+	
+	return key, value, nil
 }
 
 func (list *skipList[KT, VT]) lPop() (key KT, value VT, err error) {
-	key, value, err = list.min()
-	if err != nil {
+	// Get the minimum element atomically
+	if list.countElement == 0 {
+		err = ErrNoEntries
 		return
 	}
-	_ = list.delete(key)
-	return
+	
+	// The first element after head is always the minimum
+	minEntry := list.head.levels[0]
+	if minEntry == nil {
+		err = ErrNoEntries
+		return
+	}
+	
+	key = minEntry.key
+	value = minEntry.value
+	
+	// Delete the minimum element
+	deleted := list.delete(key)
+	if !deleted {
+		// This should not happen in a properly functioning skiplist
+		err = ErrKeyNotFound
+		return
+	}
+	
+	return key, value, nil
 }
 
 func (list *skipList[KT, VT]) max() (key KT, value VT, err error) {
